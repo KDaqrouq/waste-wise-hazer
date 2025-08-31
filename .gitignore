@@ -1,24 +1,59 @@
-# Logs
-logs
-*.log
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Node
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# ML/Dataset files - CRITICAL!
+datasets/
+models/
+runs/
+uploads/
+annotated/
+*.pt
+*.pkl
+*.h5
+*.weights
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Training outputs
+runs/
+wandb/
+*.log
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Backend specific
+backend/uploads/
+backend/annotated/
+backend/models/
+backend/runs/
