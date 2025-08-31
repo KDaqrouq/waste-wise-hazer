@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Camera, Settings, Bell } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/dashboard-hero.jpg";
 
 export const Header = () => {
@@ -28,6 +29,12 @@ export const Header = () => {
           </div>
           
           <div className="flex items-center gap-2">
+            <Link to="/food-detection">
+              <Button variant="default" size="sm">
+                <Camera className="h-4 w-4 mr-2" />
+                Food Detection
+              </Button>
+            </Link>
             <Button variant="outline" size="sm">
               <Bell className="h-4 w-4 mr-2" />
               Alerts
