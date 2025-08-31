@@ -59,7 +59,7 @@ def train_model():
         from ultralytics import YOLO
         
         # Check if dataset exists
-        dataset_path = "datasets/fruit-object-detection/data.yaml"
+        dataset_path = "C:/Users/aldaq/Coding/hz/waste-wise-hazer/datasets/fruit-object-detection"
         if not os.path.exists(dataset_path):
             print(f"❌ Dataset not found at: {dataset_path}")
             print("   Please download the dataset first or place it manually")
