@@ -8,6 +8,8 @@ import uuid
 from PIL import Image
 import io
 import base64
+from pathlib import Path
+import shutil
 
 app = Flask(__name__)
 CORS(app)
@@ -21,19 +23,62 @@ MODEL_PATH = 'models/best.pt'  # Path to your trained YOLO model
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(ANNOTATED_FOLDER, exist_ok=True)
 
-# Load the trained YOLO model
-try:
-    model = YOLO(MODEL_PATH)
-    print(f"Model loaded successfully from {MODEL_PATH}")
-except Exception as e:
-    print(f"Error loading model: {e}")
-    print("Using default YOLOv8n model for testing")
-    model = YOLO('yolov8n.pt')
+# Load the trained YOLO model (with fallback to latest run)
+def _latest_fruit_run_dir():
+    runs_dir = Path('runs') / 'detect'
+    if not runs_dir.exists():
+        return None
+    run_dirs = [d for d in runs_dir.iterdir() if d.is_dir() and d.name.startswith('fruit-detection')]
+    if not run_dirs:
+        return None
+    def run_index(p: Path) -> int:
+        suffix = p.name.replace('fruit-detection', '')
+        return int(suffix) if suffix.isdigit() else 0
+    # Prefer highest numeric suffix; break ties by most recent mtime
+    run_dirs.sort(key=run_index)
+    return max(run_dirs, key=lambda p: p.stat().st_mtime)
 
-# Class names for fruit detection (adjust based on your training data)
+def load_model_with_fallback():
+    # 1) Try models/best.pt
+    if os.path.exists(MODEL_PATH):
+        try:
+            m = YOLO(MODEL_PATH)
+            print(f"Model loaded successfully from {MODEL_PATH}")
+            return m
+        except Exception as e:
+            print(f"Primary model load failed from {MODEL_PATH}: {e}")
+
+    # 2) Try latest run's best.pt (or last.pt)
+    latest_dir = _latest_fruit_run_dir()
+    if latest_dir is not None:
+        best_path = latest_dir / 'weights' / 'best.pt'
+        last_path = latest_dir / 'weights' / 'last.pt'
+        chosen = best_path if best_path.exists() else (last_path if last_path.exists() else None)
+        if chosen is not None:
+            try:
+                print(f"Loading model from latest run: {chosen.as_posix()}")
+                m = YOLO(str(chosen))
+                # Copy for future startups
+                try:
+                    os.makedirs('models', exist_ok=True)
+                    shutil.copy2(str(chosen), MODEL_PATH)
+                    print(f"Copied {chosen.as_posix()} to {MODEL_PATH}")
+                except Exception as copy_err:
+                    print(f"Warning: could not copy to {MODEL_PATH}: {copy_err}")
+                return m
+            except Exception as e:
+                print(f"Fallback load from latest run failed: {e}")
+
+    # 3) Final fallback
+    print("Using default YOLOv8n model for testing (no trained model found)")
+    return YOLO('yolov8n.pt')
+
+model = load_model_with_fallback()
+
+# Class names for fruit detection (matching data.yaml)
 CLASS_NAMES = [
-    "Apple", "Orange", "Banana", "Grape", "Strawberry",
-    "Peach", "Pear", "Kiwi", "Pineapple", "Mango"
+    "apple", "tangerine", "pear", "watermelon", "durian", 
+    "lemon", "grape", "pineapple", "dragon fruit", "korean melon", "cantaloupe"
 ]
 
 def draw_detections(image, detections):
