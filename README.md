@@ -58,6 +58,41 @@ Interactive Dashboard               JSON Response           Real-time Alerts
 • Alert Management                  Multi-location Support  Government Reporting
 ```
 
+## 🛠️ Tech Stack
+
+### **Frontend**
+- **React 18** - Modern UI framework with hooks and functional components
+- **TypeScript** - Type-safe JavaScript development
+- **Vite** - Fast build tool and development server
+- **Tailwind CSS** - Utility-first CSS framework
+- **shadcn/ui** - Modern component library with Radix UI primitives
+- **Recharts** - Data visualization and charting library
+- **React Router** - Client-side routing
+- **Lucide React** - Icon library
+
+### **Backend**
+- **Python 3.8+** - Core programming language
+- **Flask** - Lightweight web framework
+- **Flask-CORS** - Cross-origin resource sharing
+- **YOLOv8 (Ultralytics)** - State-of-the-art object detection model
+- **OpenCV** - Computer vision and image processing
+- **PyTorch** - Deep learning framework
+- **Pillow (PIL)** - Python imaging library
+- **NumPy** - Numerical computing
+
+### **AI/ML & Computer Vision**
+- **YOLOv8** - Custom-trained object detection model
+- **Custom Dataset** - Fruit/vegetable detection training data
+- **Roboflow** - Dataset management and augmentation
+- **OpenCV** - Image preprocessing and annotation
+- **PyTorch** - Model training and inference
+
+### **Development Tools**
+- **Git** - Version control
+- **ESLint** - Code linting and formatting
+- **PostCSS** - CSS processing
+- **Autoprefixer** - CSS vendor prefixing
+
 ## 📋 Prerequisites
 
 - **Node.js** (v18 or higher)
