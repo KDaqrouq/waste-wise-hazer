@@ -160,10 +160,7 @@ MODEL_PATH = 'models/best.pt'  # Path to your trained model
 ### Class Names
 Modify the class names in `backend/app.py` to match your training data:
 ```python
-CLASS_NAMES = [
-    "Apple", "Orange", "Banana", "Grape", "Strawberry",
-    "Peach", "Pear", "Kiwi", "Pineapple", "Mango"
-]
+CLASS_NAMES = ['apple', 'tangerine', 'pear', 'watermelon', 'durian', 'lemon', 'grape', 'pineapple', 'dragon fruit', 'korean melon', 'cantaloupe']
 ```
 
 ### API Settings
@@ -254,33 +251,3 @@ waste-wise-hazer/
 ├── CAMERA_CAPTURE_FEATURE.md   # Camera feature docs
 └── README.md                   # This file
 ```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- [Ultralytics](https://github.com/ultralytics/ultralytics) for YOLOv8
-- [Roboflow](https://roboflow.com/) for dataset management
-- [shadcn/ui](https://ui.shadcn.com/) for UI components
-
-## 📞 Support
-
-For questions or issues:
-1. Check the troubleshooting section
-2. Review backend logs
-3. Open an issue on GitHub
-4. Contact the development team
-
----
-
-**Happy detecting! 🍎🍌🍇**
