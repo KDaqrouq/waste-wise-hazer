@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Waste Wise Hazer - AI-Powered Food Waste Detection System
 
 A comprehensive food waste detection system that uses computer vision and machine learning to identify and count different types of fruits and vegetables in images. The system includes both a **mock enterprise dashboard** for demonstration purposes and a **fully functional food detection engine** with real AI processing.
@@ -319,3 +320,6 @@ For questions or issues:
 ---
 
 **Happy detecting! 🍎🍌🍇**
+=======
+.
+>>>>>>> d3060c1f7aa55f8f9e930c8f0a30aa28b12fc0b6
