@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Bell, CheckCircle, Users, Truck, ChefHat } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ImpactScreen from "./ImpactScreen";
 
 interface FoodAlertProps {
   className: string;
@@ -14,6 +15,7 @@ interface FoodAlertProps {
 const FoodAlert = ({ className, count, threshold }: FoodAlertProps) => {
   const [isNotified, setIsNotified] = useState(false);
   const [notificationsSent, setNotificationsSent] = useState<string[]>([]);
+  const [showImpact, setShowImpact] = useState(false);
   const { toast } = useToast();
 
   const isHighQuantity = count >= threshold;
@@ -28,6 +30,13 @@ const FoodAlert = ({ className, count, threshold }: FoodAlertProps) => {
         title: "Notification Sent!",
         description: `Alert sent to ${type.toLowerCase()}`,
       });
+
+      // Show impact screen after first notification
+      if (notificationsSent.length === 0) {
+        setTimeout(() => {
+          setShowImpact(true);
+        }, 1000);
+      }
     }
   };
 
@@ -49,6 +58,7 @@ const FoodAlert = ({ className, count, threshold }: FoodAlertProps) => {
   };
 
   return (
+    <>
     <Card className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-red-700 dark:text-red-400">
@@ -115,6 +125,16 @@ const FoodAlert = ({ className, count, threshold }: FoodAlertProps) => {
         </div>
       </CardContent>
     </Card>
+
+    {/* Impact Screen */}
+    {showImpact && (
+      <ImpactScreen
+        foodType={className}
+        quantity={count}
+        onClose={() => setShowImpact(false)}
+      />
+    )}
+  </>
   );
 };
 
