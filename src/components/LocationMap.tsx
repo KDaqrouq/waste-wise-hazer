@@ -80,6 +80,24 @@ export const LocationMap = () => {
         <CardDescription>
           Real-time monitoring across {totalLocations} locations in the UAE
         </CardDescription>
+        
+        {/* UAE Government & UN Initiative Badges */}
+        <div className="flex flex-wrap gap-3 mt-3">
+          <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs">
+            <span className="text-lg">🇦🇪</span>
+            <span className="font-medium text-blue-700 dark:text-blue-300">UAE National Food Security Strategy 2051</span>
+          </div>
+          
+          <div className="flex items-center gap-2 px-3 py-1 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-full text-xs">
+            <span className="text-lg">🌱</span>
+            <span className="font-medium text-green-700 dark:text-green-300">Ne'ma Initiative</span>
+          </div>
+          
+          <div className="flex items-center gap-2 px-3 py-1 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-full text-xs">
+            <span className="text-lg">🌍</span>
+            <span className="font-medium text-purple-700 dark:text-purple-300">UN SDGs (2, 11, 12, 13)</span>
+          </div>
+        </div>
         <div className="flex gap-4 text-sm">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
