@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Upload, Camera, AlertCircle } from "lucide-react";
+import { Loader2, Upload, Camera, AlertCircle, CameraIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
+import CameraCapture from "@/components/CameraCapture";
 
 interface DetectionResult {
   class_id: number;
@@ -34,6 +35,7 @@ const FoodDetection = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<ApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -122,6 +124,55 @@ const FoodDetection = () => {
     }
   };
 
+  const handleCameraCapture = async (imageFile: File) => {
+    setSelectedFile(imageFile);
+    setError(null);
+    setResults(null);
+    setIsLoading(true);
+    
+    // Create preview URL
+    const url = URL.createObjectURL(imageFile);
+    setPreviewUrl(url);
+    
+    try {
+      // Use the camera capture endpoint
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      formData.append('timestamp', new Date().toISOString().replace(/[:.]/g, '-'));
+
+      const response = await fetch('/api/camera-capture', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: ApiResponse = await response.json();
+      
+      if (data.success) {
+        setResults(data);
+        toast({
+          title: "Image captured and analyzed!",
+          description: `Found ${data.total_detections} food items. Image saved to camera_captures folder.`,
+        });
+      } else {
+        throw new Error("Camera capture analysis failed");
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "An error occurred during camera capture";
+      setError(errorMessage);
+      toast({
+        title: "Camera capture failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
@@ -150,10 +201,10 @@ const FoodDetection = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Camera className="h-5 w-5" />
-                Upload Image
+                Upload or Capture Image
               </CardTitle>
               <CardDescription>
-                Select or drag & drop an image to analyze
+                Select an image file, drag & drop, or capture from camera
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -196,15 +247,24 @@ const FoodDetection = () => {
                   <div className="space-y-4">
                     <Upload className="h-12 w-12 text-muted-foreground mx-auto" />
                     <div>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Drag & drop an image here, or click to select
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Drag & drop an image here, or choose an option below
                       </p>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        Choose File
-                      </Button>
+                      <div className="flex gap-2 justify-center">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          Choose File
+                        </Button>
+                        <Button 
+                          onClick={() => setShowCamera(true)}
+                          className="flex items-center gap-2"
+                        >
+                          <CameraIcon className="h-4 w-4" />
+                          Take Photo
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -343,6 +403,14 @@ const FoodDetection = () => {
           </div>
         </div>
       </div>
+
+      {/* Camera Capture Modal */}
+      {showCamera && (
+        <CameraCapture
+          onImageCapture={handleCameraCapture}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </div>
   );
 };

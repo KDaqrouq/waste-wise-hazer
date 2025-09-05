@@ -17,11 +17,13 @@ CORS(app)
 # Configuration
 UPLOAD_FOLDER = 'uploads'
 ANNOTATED_FOLDER = 'annotated'
+CAMERA_CAPTURES_FOLDER = 'camera_captures'
 MODEL_PATH = 'models/best.pt'  # Path to your trained YOLO model
 
 # Create directories if they don't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(ANNOTATED_FOLDER, exist_ok=True)
+os.makedirs(CAMERA_CAPTURES_FOLDER, exist_ok=True)
 
 # Load the trained YOLO model (with fallback to latest run)
 def _latest_fruit_run_dir():
@@ -216,6 +218,70 @@ def get_classes():
         'classes': CLASS_NAMES,
         'total_classes': len(CLASS_NAMES)
     })
+
+@app.route('/api/camera-capture', methods=['POST'])
+def camera_capture():
+    """Handle camera capture and save to specific folder"""
+    try:
+        # Check if image file is present
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'error': 'No image file provided'}), 400
+        
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No image file selected'}), 400
+        
+        # Generate unique filename with timestamp
+        timestamp = request.form.get('timestamp', '')
+        if timestamp:
+            filename = f"camera_capture_{timestamp}_{uuid.uuid4().hex[:8]}.jpg"
+        else:
+            filename = f"camera_capture_{uuid.uuid4()}.jpg"
+        
+        filepath = os.path.join(CAMERA_CAPTURES_FOLDER, filename)
+        
+        # Save captured image
+        file.save(filepath)
+        
+        # Load image for processing
+        image = cv2.imread(filepath)
+        if image is None:
+            return jsonify({'success': False, 'error': 'Invalid image file'}), 400
+        
+        # Run YOLO detection
+        results = model(image)
+        
+        # Process detection results
+        detections, class_counts = process_detections(results)
+        
+        # Draw detections on image
+        annotated_image = draw_detections(image, detections)
+        
+        # Save annotated image
+        annotated_filename = f"annotated_{filename}"
+        annotated_filepath = os.path.join(ANNOTATED_FOLDER, annotated_filename)
+        cv2.imwrite(annotated_filepath, annotated_image)
+        
+        # Convert annotated image to base64 for frontend display
+        with open(annotated_filepath, 'rb') as img_file:
+            img_data = base64.b64encode(img_file.read()).decode('utf-8')
+        
+        # Prepare response
+        response_data = {
+            'success': True,
+            'detections': detections,
+            'annotated_image_url': f"data:image/jpeg;base64,{img_data}",
+            'total_detections': len(detections),
+            'class_counts': class_counts,
+            'saved_path': filepath,
+            'message': f'Image saved to {CAMERA_CAPTURES_FOLDER} folder'
+        }
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"Error during camera capture: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     print("Starting Food Detection API...")
