@@ -1,25 +1,61 @@
-# Waste Wise Hazer - AI-Powered Food Waste Detection
+# Waste Wise Hazer - AI-Powered Food Waste Detection System
 
-A comprehensive food waste detection system that uses computer vision and machine learning to identify and count different types of fruits and vegetables in images.
+A comprehensive food waste detection system that uses computer vision and machine learning to identify and count different types of fruits and vegetables in images. The system includes both a **mock enterprise dashboard** for demonstration purposes and a **fully functional food detection engine** with real AI processing.
 
 ## 🚀 Features
 
-- **Frontend Dashboard**: Modern React-based UI with drag-and-drop image upload
-- **AI Model**: YOLOv8-based object detection trained on fruit/vegetable datasets
-- **Real-time Detection**: Instant analysis with bounding boxes and confidence scores
-- **Class Counting**: Automatic counting of detected food items by category
-- **Annotated Results**: Visual output with detection boxes and labels
+### ✅ **Real Food Detection System** (Fully Functional)
+- **AI-Powered Detection**: YOLOv8-based object detection trained on fruit/vegetable datasets
+- **Real-time Analysis**: Instant image processing with bounding boxes and confidence scores
+- **Multi-Input Support**: File upload, drag-and-drop, and live camera capture
+- **Automatic Classification**: 11 food categories (apple, tangerine, pear, watermelon, durian, lemon, grape, pineapple, dragon fruit, korean melon, cantaloupe)
+- **Live Camera Integration**: Direct webcam access with automatic image capture and processing
+- **File Management**: Organized storage with dedicated folders for uploads and camera captures
+- **Backend API**: Flask server with RESTful endpoints for image processing
+
+### 🎭 **Mock Enterprise Dashboard** (Demonstration Only)
+- **UAE Network Map**: Simulated map view of 12+ locations across 5 Emirates (mock data)
+- **Interactive Pins**: Color-coded locations (green=low, yellow=medium, red=high waste)
+- **Government Badges**: UAE National Food Security Strategy 2051, Ne'ma Initiative, UN SDGs
+- **Analytics Charts**: Mock waste data with red-highlighted high-waste categories
+- **Alert System**: Simulated notifications to food banks, delivery partners, and kitchens
+- **Impact Screens**: Mock calculations showing kg saved and AED cost savings
+- **Network Statistics**: Simulated real-time monitoring data
+
+## 🔍 **What's Real vs Mock**
+
+### **Real Components** (Actual AI Processing):
+- ✅ Food Detection Page - Real YOLOv8 model processing
+- ✅ Camera Capture - Live webcam integration
+- ✅ Image Upload - File processing and classification
+- ✅ Backend API - Flask server with actual ML inference
+- ✅ Detection Results - Real bounding boxes and confidence scores
+- ✅ File Storage - Actual image saving and organization
+
+### **Mock Components** (Demonstration Only):
+- 🎭 UAE Network Map - Simulated locations and data
+- 🎭 Dashboard Analytics - Mock charts and statistics
+- 🎭 Alert Notifications - Simulated alerts (no real notifications sent)
+- 🎭 Impact Calculations - Mock savings calculations
+- 🎭 Government Badges - Visual elements for presentation
+- 🎭 Network Statistics - Simulated monitoring data
 
 ## 🏗️ Architecture
 
 ```
-Frontend (React + TypeScript) ←→ Backend (Flask + YOLO) ←→ Trained Model
-     ↓                              ↓                        ↓
-Image Upload                    API Processing           Object Detection
-     ↓                              ↓                        ↓
-Drag & Drop                   Model Inference          Bounding Boxes
-     ↓                              ↓                        ↓
-Results Display               JSON Response           Class Counts
+Frontend (React + TypeScript + Vite) ←→ Backend (Flask + YOLO) ←→ Trained Model
+     ↓                                    ↓                        ↓
+Multi-Input Interface                API Processing           Object Detection
+     ↓                                    ↓                        ↓
+• File Upload                        Model Inference          Bounding Boxes
+• Drag & Drop                        Image Annotation         Class Counts
+• Camera Capture                     Alert Processing         Impact Calculation
+     ↓                                    ↓                        ↓
+Interactive Dashboard               JSON Response           Real-time Alerts
+     ↓                                    ↓                        ↓
+• Network Map                       File Management         Notification System
+• Analytics Charts                  Database Storage        Cost Savings Tracking
+• Alert Management                  Multi-location Support  Government Reporting
 ```
 
 ## 📋 Prerequisites
@@ -83,20 +119,33 @@ This will:
 
 ## 🎯 Usage
 
-### Frontend Dashboard
+### **Real Food Detection System**
 
 1. Navigate to `http://localhost:8080`
 2. Click "Food Detection" in the header
-3. Upload an image by dragging & dropping or clicking "Choose File"
-4. Click "Analyze Image" to run detection
-5. View results with:
-   - Detection counts per class
+3. **Upload an image** by:
+   - Dragging & dropping files
+   - Clicking "Choose File" 
+   - Using "Take Photo" for live camera capture
+4. Click "Analyze Image" to run **real AI detection**
+5. View **actual results** with:
+   - Real detection counts per food category
    - Annotated image with bounding boxes
+   - Confidence scores for each detection
    - Individual detection details
+
+### **Mock Dashboard** (Demonstration Only)
+
+1. Navigate to `http://localhost:8080` (main page)
+2. View the **simulated UAE Network Map** with mock locations
+3. See **mock analytics charts** with sample waste data
+4. Interact with **simulated alert system** (no real notifications sent)
+5. Explore **mock impact calculations** and government alignment badges
 
 ### API Endpoints
 
 - `POST /api/predict` - Upload image and get detection results
+- `POST /api/camera-capture` - Capture from camera and process automatically
 - `GET /api/health` - Health check and model status
 - `GET /api/classes` - Get available class names
 
@@ -182,6 +231,12 @@ app.run(debug=True, host='0.0.0.0', port=5000)
 waste-wise-hazer/
 ├── src/                          # Frontend React code
 │   ├── components/              # UI components
+│   │   ├── CameraCapture.tsx   # Camera integration
+│   │   ├── FoodAlert.tsx       # Alert system
+│   │   ├── FoodWasteChart.tsx  # Analytics charts
+│   │   ├── LocationMap.tsx     # UAE network map
+│   │   ├── ImpactScreen.tsx    # Impact tracking
+│   │   └── ui/                 # shadcn/ui components
 │   ├── pages/                   # Page components
 │   │   ├── Index.tsx           # Main dashboard
 │   │   └── FoodDetection.tsx   # Food detection page
@@ -193,8 +248,10 @@ waste-wise-hazer/
 │   ├── train_model.py         # Training pipeline
 │   ├── models/                 # Trained models
 │   ├── uploads/                # Temporary uploads
+│   ├── camera_captures/        # Camera images
 │   └── annotated/              # Annotated images
 ├── package.json                # Frontend dependencies
+├── CAMERA_CAPTURE_FEATURE.md   # Camera feature docs
 └── README.md                   # This file
 ```
 
