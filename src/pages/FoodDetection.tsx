@@ -8,6 +8,7 @@ import { Loader2, Upload, Camera, AlertCircle, CameraIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import CameraCapture from "@/components/CameraCapture";
+import FoodAlert from "@/components/FoodAlert";
 
 interface DetectionResult {
   class_id: number;
@@ -28,6 +29,21 @@ const classNames = [
   "🍎 apple", "🍊 tangerine", "🍐 pear", "🍉 watermelon", "🥑 durian",
   "🍋 lemon", "🍇 grape", "🍍 pineapple", "🐉 dragon fruit", "🍈 korean melon", "🍈 cantaloupe"
 ];
+
+// Alert thresholds for each food type
+const alertThresholds: Record<string, number> = {
+  "apple": 5,
+  "tangerine": 4,
+  "pear": 3,
+  "watermelon": 2,
+  "durian": 2,
+  "lemon": 6,
+  "grape": 8,
+  "pineapple": 3,
+  "dragon fruit": 2,
+  "korean melon": 2,
+  "cantaloupe": 2
+};
 
 const FoodDetection = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -303,15 +319,43 @@ const FoodDetection = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {Object.entries(results.class_counts).map(([className, count]) => (
-                        <div key={className} className="flex justify-between items-center">
-                          <span className="text-sm font-medium">{className}</span>
-                          <Badge variant="secondary">{count}</Badge>
-                        </div>
-                      ))}
+                      {Object.entries(results.class_counts).map(([className, count]) => {
+                        const threshold = alertThresholds[className.toLowerCase()] || 10;
+                        const isHighQuantity = count >= threshold;
+                        
+                        return (
+                          <div key={className} className="flex justify-between items-center">
+                            <span className={`text-sm font-medium ${isHighQuantity ? 'text-red-600 dark:text-red-400' : ''}`}>
+                              {className}
+                            </span>
+                            <Badge 
+                              variant={isHighQuantity ? "destructive" : "secondary"}
+                              className={isHighQuantity ? "bg-red-500 hover:bg-red-600" : ""}
+                            >
+                              {count}
+                            </Badge>
+                          </div>
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Food Alerts */}
+                {Object.entries(results.class_counts).map(([className, count]) => {
+                  const threshold = alertThresholds[className.toLowerCase()] || 10;
+                  if (count >= threshold) {
+                    return (
+                      <FoodAlert
+                        key={`alert-${className}`}
+                        className={className}
+                        count={count}
+                        threshold={threshold}
+                      />
+                    );
+                  }
+                  return null;
+                })}
 
                 {/* Annotated Image */}
                 {results.annotated_image_url && (
