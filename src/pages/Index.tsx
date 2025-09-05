@@ -1,6 +1,7 @@
 import { MetricsCard } from "@/components/MetricsCard";
 import { FoodWasteChart } from "@/components/FoodWasteChart";
 import { RecentDetections } from "@/components/RecentDetections";
+import { LocationMap } from "@/components/LocationMap";
 import { Header } from "@/components/Header";
 import { TrendingDown, TrendingUp, Camera, MapPin, Recycle, AlertTriangle } from "lucide-react";
 
@@ -35,8 +36,8 @@ const Index = () => {
           />
           <MetricsCard
             title="Locations Monitored"
-            value="5"
-            change="Kitchen, Cafeteria, Office areas"
+            value="12"
+            change="Across 5 UAE Emirates"
             changeType="neutral"
             icon={MapPin}
           />
@@ -46,6 +47,11 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <FoodWasteChart />
           <RecentDetections />
+        </div>
+
+        {/* UAE Network Map */}
+        <div className="mb-8">
+          <LocationMap />
         </div>
 
         {/* Additional Insights */}
