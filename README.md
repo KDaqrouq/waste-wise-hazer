@@ -1,4 +1,4 @@
-# Waste Wise Hazer - AI-Powered Food Waste Detection System
+# Hazer - AI-Powered Food Waste Detection System
 
 A comprehensive food waste detection system that uses computer vision and machine learning to identify and count different types of fruits and vegetables in images. The system includes both a **mock enterprise dashboard** for demonstration purposes and a **fully functional food detection engine** with real AI processing.
 
@@ -289,33 +289,3 @@ waste-wise-hazer/
 ├── CAMERA_CAPTURE_FEATURE.md   # Camera feature docs
 └── README.md                   # This file
 ```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- [Ultralytics](https://github.com/ultralytics/ultralytics) for YOLOv8
-- [Roboflow](https://roboflow.com/) for dataset management
-- [shadcn/ui](https://ui.shadcn.com/) for UI components
-
-## 📞 Support
-
-For questions or issues:
-1. Check the troubleshooting section
-2. Review backend logs
-3. Open an issue on GitHub
-4. Contact the development team
-
----
-
-**Happy detecting! 🍎🍌🍇**
