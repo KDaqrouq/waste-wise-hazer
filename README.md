@@ -1,6 +1,6 @@
 # Hazer - AI-Powered Food Waste Detection System
 
-A comprehensive food waste detection system that uses computer vision and machine learning to identify and count different types of fruits and vegetables in images. The system includes both a **mock enterprise dashboard** for demonstration purposes and a **fully functional food detection engine** with real AI processing.
+A comprehensive food waste detection system that uses computer vision and machine learning to identify and count different types of fruits in images. The system includes both a **mock enterprise dashboard** for demonstration purposes and a **fully functional food detection engine** with real AI processing.
 
 ## 🚀 Features
 
