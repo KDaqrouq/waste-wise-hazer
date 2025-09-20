@@ -22,24 +22,6 @@ A comprehensive food waste detection system that uses computer vision and machin
 - **Impact Screens**: Mock calculations showing kg saved and AED cost savings
 - **Network Statistics**: Simulated real-time monitoring data
 
-## 🔍 **What's Real vs Mock**
-
-### **Real Components** (Actual AI Processing):
-- ✅ Food Detection Page - Real YOLOv8 model processing
-- ✅ Camera Capture - Live webcam integration
-- ✅ Image Upload - File processing and classification
-- ✅ Backend API - Flask server with actual ML inference
-- ✅ Detection Results - Real bounding boxes and confidence scores
-- ✅ File Storage - Actual image saving and organization
-
-### **Mock Components** (Demonstration Only):
-- 🎭 UAE Network Map - Simulated locations and data
-- 🎭 Dashboard Analytics - Mock charts and statistics
-- 🎭 Alert Notifications - Simulated alerts (no real notifications sent)
-- 🎭 Impact Calculations - Mock savings calculations
-- 🎭 Government Badges - Visual elements for presentation
-- 🎭 Network Statistics - Simulated monitoring data
-
 ## 🏗️ Architecture
 
 ```
