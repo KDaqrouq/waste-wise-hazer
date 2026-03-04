@@ -2,6 +2,25 @@
 
 A comprehensive food waste detection system that uses computer vision and machine learning to identify and count different types of fruits in images. The system includes both a **mock enterprise dashboard** for demonstration purposes and a **fully functional food detection engine** with real AI processing.
 
+## Metrics (50 Epochs)
+
+### **Final Epoch Metrics**
+- Precision (B): 0.88705
+- Recall (B): 0.91602
+- mAP@50 (B): 0.95637
+- mAP@50–95 (B): 0.79740
+
+### **Training Loss**
+- Train Box Loss: 0.58085
+- Train Classification Loss: 0.30294
+- Train DFL Loss: 0.93764
+
+### **Validation Loss**
+- Validation Box Loss: 0.60512
+- Validation Classification Loss: 0.39619
+- Validation DFL Loss: 0.94575
+
+
 ## 🚀 Features
 
 ### ✅ **Real Food Detection System** (Fully Functional)
