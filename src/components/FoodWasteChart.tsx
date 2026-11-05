@@ -1,64 +1,52 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useStats } from "@/hooks/use-backend";
 
-const mockData = [
-  { name: "Vegetables", amount: 12.5, percentage: 25, isHigh: true },
-  { name: "Fruits", amount: 8.3, percentage: 17, isHigh: false },
-  { name: "Bread", amount: 6.7, percentage: 13, isHigh: false },
-  { name: "Dairy", amount: 5.2, percentage: 10, isHigh: false },
-  { name: "Meat", amount: 4.8, percentage: 9, isHigh: false },
-  { name: "Other", amount: 12.5, percentage: 26, isHigh: true },
-];
+// SVG fill attributes can't read CSS variables, so this mirrors --primary from index.css
+const BAR_COLOR = "hsl(142, 71%, 45%)";
 
 export const FoodWasteChart = () => {
+  const { data, isLoading, isError } = useStats();
+  const chartData = Object.entries(data?.class_totals ?? {}).map(([name, count]) => ({ name, count }));
+
   return (
-    <Card className="col-span-2">
+    <Card className="lg:col-span-2">
       <CardHeader>
-        <CardTitle>Food Waste by Category</CardTitle>
+        <CardTitle>Detections by Fruit</CardTitle>
         <CardDescription>
-          Weekly breakdown of wasted food items detected by cameras
+          Total items detected per fruit type across all analyzed images
         </CardDescription>
-        {mockData.some(item => item.isHigh) && (
-          <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-700 dark:text-red-300">
-            ⚠️ High quantity of waste detected in: {mockData.filter(item => item.isHigh).map(item => item.name).join(", ")}
-          </div>
-        )}
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={mockData}>
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis 
-              dataKey="name" 
-              className="text-sm"
-              tick={{ fontSize: 12 }}
-            />
-            <YAxis 
-              className="text-sm"
-              tick={{ fontSize: 12 }}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px'
-              }}
-            />
-            <Legend />
-            <Bar 
-              dataKey="amount" 
-              name="Amount (kg)"
-              radius={[4, 4, 0, 0]}
-            >
-              {mockData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`}
-                  fill={entry.isHigh ? "#ef4444" : "hsl(var(--primary))"}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {isLoading && <Skeleton className="h-[350px] w-full" />}
+        {isError && (
+          <div className="h-[350px] flex items-center justify-center text-sm text-muted-foreground text-center px-6">
+            The detection server is offline. Start the backend to see real detection data.
+          </div>
+        )}
+        {data && chartData.length === 0 && (
+          <div className="h-[350px] flex items-center justify-center text-sm text-muted-foreground">
+            No detections yet. Analyze an image on the Food Detection page to fill this chart.
+          </div>
+        )}
+        {chartData.length > 0 && (
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px'
+                }}
+              />
+              <Bar dataKey="count" name="Items detected" fill={BAR_COLOR} radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );

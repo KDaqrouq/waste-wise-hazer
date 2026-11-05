@@ -58,3 +58,6 @@ backend/annotated/
 backend/models/
 backend/runs/
 backend/camera_captures/
+backend/*.db
+backend/requirements_installed
+.pytest_cache/

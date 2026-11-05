@@ -16,26 +16,26 @@ interface Location {
 
 const mockLocations: Location[] = [
   // Dubai locations
-  { id: '1', name: 'Burj Al Arab Kitchen', type: 'hotel', city: 'Dubai', wasteLevel: 'high', wasteAmount: 15.2, status: 'active', lastUpdate: '2 min ago', coordinates: { x: 45, y: 25 } },
-  { id: '2', name: 'Dubai Mall Food Court', type: 'restaurant', city: 'Dubai', wasteLevel: 'medium', wasteAmount: 8.7, status: 'active', lastUpdate: '5 min ago', coordinates: { x: 50, y: 30 } },
-  { id: '3', name: 'Emirates Tower Cafeteria', type: 'cafeteria', city: 'Dubai', wasteLevel: 'low', wasteAmount: 3.1, status: 'active', lastUpdate: '1 min ago', coordinates: { x: 48, y: 28 } },
-  { id: '4', name: 'Palm Jumeirah Resort', type: 'hotel', city: 'Dubai', wasteLevel: 'high', wasteAmount: 18.5, status: 'active', lastUpdate: '3 min ago', coordinates: { x: 42, y: 35 } },
+  { id: '1', name: 'Marina Hotel Kitchen', type: 'hotel', city: 'Dubai', wasteLevel: 'high', wasteAmount: 15.2, status: 'active', lastUpdate: '2 min ago', coordinates: { x: 45, y: 25 } },
+  { id: '2', name: 'Downtown Mall Food Court', type: 'restaurant', city: 'Dubai', wasteLevel: 'medium', wasteAmount: 8.7, status: 'active', lastUpdate: '5 min ago', coordinates: { x: 50, y: 30 } },
+  { id: '3', name: 'Business Bay Office Cafeteria', type: 'cafeteria', city: 'Dubai', wasteLevel: 'low', wasteAmount: 3.1, status: 'active', lastUpdate: '1 min ago', coordinates: { x: 48, y: 28 } },
+  { id: '4', name: 'Beachfront Resort', type: 'hotel', city: 'Dubai', wasteLevel: 'high', wasteAmount: 18.5, status: 'active', lastUpdate: '3 min ago', coordinates: { x: 42, y: 35 } },
   
   // Abu Dhabi locations
-  { id: '5', name: 'Sheikh Zayed Mosque Canteen', type: 'cafeteria', city: 'Abu Dhabi', wasteLevel: 'low', wasteAmount: 2.8, status: 'active', lastUpdate: '4 min ago', coordinates: { x: 25, y: 20 } },
-  { id: '6', name: 'Yas Island Hotel', type: 'hotel', city: 'Abu Dhabi', wasteLevel: 'medium', wasteAmount: 9.3, status: 'active', lastUpdate: '6 min ago', coordinates: { x: 30, y: 25 } },
-  { id: '7', name: 'ADNOC Headquarters', type: 'office', city: 'Abu Dhabi', wasteLevel: 'low', wasteAmount: 4.2, status: 'active', lastUpdate: '2 min ago', coordinates: { x: 28, y: 18 } },
+  { id: '5', name: 'Corniche Community Canteen', type: 'cafeteria', city: 'Abu Dhabi', wasteLevel: 'low', wasteAmount: 2.8, status: 'active', lastUpdate: '4 min ago', coordinates: { x: 25, y: 20 } },
+  { id: '6', name: 'Island Hotel', type: 'hotel', city: 'Abu Dhabi', wasteLevel: 'medium', wasteAmount: 9.3, status: 'active', lastUpdate: '6 min ago', coordinates: { x: 30, y: 25 } },
+  { id: '7', name: 'Downtown Office Tower', type: 'office', city: 'Abu Dhabi', wasteLevel: 'low', wasteAmount: 4.2, status: 'active', lastUpdate: '2 min ago', coordinates: { x: 28, y: 18 } },
   
   // Sharjah locations
-  { id: '8', name: 'Sharjah University Cafeteria', type: 'cafeteria', city: 'Sharjah', wasteLevel: 'medium', wasteAmount: 7.9, status: 'active', lastUpdate: '3 min ago', coordinates: { x: 35, y: 15 } },
-  { id: '9', name: 'Al Qasba Restaurant', type: 'restaurant', city: 'Sharjah', wasteLevel: 'high', wasteAmount: 12.4, status: 'maintenance', lastUpdate: '1 hour ago', coordinates: { x: 38, y: 12 } },
+  { id: '8', name: 'University City Cafeteria', type: 'cafeteria', city: 'Sharjah', wasteLevel: 'medium', wasteAmount: 7.9, status: 'active', lastUpdate: '3 min ago', coordinates: { x: 35, y: 15 } },
+  { id: '9', name: 'Waterfront Restaurant', type: 'restaurant', city: 'Sharjah', wasteLevel: 'high', wasteAmount: 12.4, status: 'maintenance', lastUpdate: '1 hour ago', coordinates: { x: 38, y: 12 } },
   
   // Ajman locations
-  { id: '10', name: 'Ajman Corniche Hotel', type: 'hotel', city: 'Ajman', wasteLevel: 'low', wasteAmount: 5.6, status: 'active', lastUpdate: '5 min ago', coordinates: { x: 40, y: 8 } },
+  { id: '10', name: 'Corniche Hotel', type: 'hotel', city: 'Ajman', wasteLevel: 'low', wasteAmount: 5.6, status: 'active', lastUpdate: '5 min ago', coordinates: { x: 40, y: 8 } },
   
   // Ras Al Khaimah locations
-  { id: '11', name: 'RAK Mall Food Court', type: 'restaurant', city: 'Ras Al Khaimah', wasteLevel: 'medium', wasteAmount: 6.8, status: 'active', lastUpdate: '4 min ago', coordinates: { x: 55, y: 5 } },
-  { id: '12', name: 'Jebel Jais Resort', type: 'hotel', city: 'Ras Al Khaimah', wasteLevel: 'low', wasteAmount: 3.9, status: 'offline', lastUpdate: '2 hours ago', coordinates: { x: 58, y: 2 } },
+  { id: '11', name: 'City Mall Food Court', type: 'restaurant', city: 'Ras Al Khaimah', wasteLevel: 'medium', wasteAmount: 6.8, status: 'active', lastUpdate: '4 min ago', coordinates: { x: 55, y: 5 } },
+  { id: '12', name: 'Mountain Resort', type: 'hotel', city: 'Ras Al Khaimah', wasteLevel: 'low', wasteAmount: 3.9, status: 'offline', lastUpdate: '2 hours ago', coordinates: { x: 58, y: 2 } },
 ];
 
 const getWasteColor = (level: string) => {
@@ -71,18 +71,20 @@ export const LocationMap = () => {
   const highWasteLocations = mockLocations.filter(loc => loc.wasteLevel === 'high').length;
 
   return (
-    <Card className="col-span-2">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MapPin className="h-5 w-5" />
           UAE Network Status
+          <Badge variant="outline" className="ml-auto text-xs font-normal">Demo data</Badge>
         </CardTitle>
         <CardDescription>
-          Real-time monitoring across {totalLocations} locations in the UAE
+          Sample network of {totalLocations} fictional locations across the UAE, showing how multi-site monitoring would look
         </CardDescription>
         
-        {/* UAE Government & UN Initiative Badges */}
-        <div className="flex flex-wrap gap-3 mt-3">
+        {/* UAE Government & UN goals the project is designed around (not endorsements) */}
+        <div className="flex flex-wrap items-center gap-3 mt-3">
+          <span className="text-xs text-muted-foreground">Designed around:</span>
           <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs">
             <span className="text-lg">🇦🇪</span>
             <span className="font-medium text-blue-700 dark:text-blue-300">UAE National Food Security Strategy 2051</span>

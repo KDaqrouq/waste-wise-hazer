@@ -1,292 +1,254 @@
-from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS
-from ultralytics import YOLO
+import base64
+import logging
+import os
+import time
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+
 import cv2
 import numpy as np
-import os
-import uuid
-from PIL import Image
-import io
-import base64
-from pathlib import Path
-import shutil
+from flask import Flask, jsonify, request, send_file
+from flask_cors import CORS
+from werkzeug.exceptions import HTTPException, RequestEntityTooLarge
+from werkzeug.utils import secure_filename
 
-app = Flask(__name__)
-CORS(app)
+from db import DetectionStore
+from run_utils import BASE_DIR, find_run_for_weights, latest_run_dir, read_run_metrics, run_weights
 
-# Configuration
-UPLOAD_FOLDER = 'uploads'
-ANNOTATED_FOLDER = 'annotated'
-CAMERA_CAPTURES_FOLDER = 'camera_captures'
-MODEL_PATH = 'models/best.pt'  # Path to your trained YOLO model
+log = logging.getLogger("hazer")
 
-# Create directories if they don't exist
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(ANNOTATED_FOLDER, exist_ok=True)
-os.makedirs(CAMERA_CAPTURES_FOLDER, exist_ok=True)
+# Configuration (override with environment variables)
+MODEL_PATH = Path(os.environ.get("HAZER_MODEL_PATH", BASE_DIR / "models" / "best.pt"))
+DATA_DIR = Path(os.environ.get("HAZER_DATA_DIR", BASE_DIR))
+MAX_UPLOAD_MB = float(os.environ.get("HAZER_MAX_UPLOAD_MB", 10))
+MAX_SAVED_IMAGES = int(os.environ.get("HAZER_MAX_SAVED_IMAGES", 200))
+DEFAULT_CONFIDENCE = 0.25
 
-# Load the trained YOLO model (with fallback to latest run)
-def _latest_fruit_run_dir():
-    runs_dir = Path('runs') / 'detect'
-    if not runs_dir.exists():
-        return None
-    run_dirs = [d for d in runs_dir.iterdir() if d.is_dir() and d.name.startswith('fruit-detection')]
-    if not run_dirs:
-        return None
-    def run_index(p: Path) -> int:
-        suffix = p.name.replace('fruit-detection', '')
-        return int(suffix) if suffix.isdigit() else 0
-    # Prefer highest numeric suffix; break ties by most recent mtime
-    run_dirs.sort(key=run_index)
-    return max(run_dirs, key=lambda p: p.stat().st_mtime)
 
-def load_model_with_fallback():
-    # 1) Try models/best.pt
-    if os.path.exists(MODEL_PATH):
+class YoloDetector:
+    """Wraps an Ultralytics model and records where it came from."""
+
+    def __init__(self, model, source, custom, metrics=None):
+        self.model = model
+        self.names = {int(k): v for k, v in model.names.items()}
+        self.info = {
+            "source": source,
+            "custom": custom,
+            "class_names": [self.names[i] for i in sorted(self.names)],
+            "metrics": metrics,
+        }
+
+    def predict(self, image, conf):
+        detections = []
+        for result in self.model(image, conf=conf, verbose=False):
+            if result.boxes is None:
+                continue
+            for box in result.boxes:
+                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                class_id = int(box.cls[0])
+                detections.append({
+                    "class_id": class_id,
+                    "class_name": self.names.get(class_id, f"class {class_id}"),
+                    "confidence": float(box.conf[0]),
+                    "bbox": [int(x1), int(y1), int(x2), int(y2)],
+                })
+        return detections
+
+
+def load_detector():
+    """Load the trained fruit model, falling back to the latest training run, then to stock YOLOv8n."""
+    from ultralytics import YOLO
+
+    if MODEL_PATH.exists():
         try:
-            m = YOLO(MODEL_PATH)
-            print(f"Model loaded successfully from {MODEL_PATH}")
-            return m
-        except Exception as e:
-            print(f"Primary model load failed from {MODEL_PATH}: {e}")
+            model = YOLO(str(MODEL_PATH))
+            log.info("Model loaded from %s", MODEL_PATH)
+            return YoloDetector(model, MODEL_PATH.name, True, read_run_metrics(find_run_for_weights(MODEL_PATH)))
+        except Exception:
+            log.exception("Could not load %s", MODEL_PATH)
 
-    # 2) Try latest run's best.pt (or last.pt)
-    latest_dir = _latest_fruit_run_dir()
-    if latest_dir is not None:
-        best_path = latest_dir / 'weights' / 'best.pt'
-        last_path = latest_dir / 'weights' / 'last.pt'
-        chosen = best_path if best_path.exists() else (last_path if last_path.exists() else None)
-        if chosen is not None:
-            try:
-                print(f"Loading model from latest run: {chosen.as_posix()}")
-                m = YOLO(str(chosen))
-                # Copy for future startups
-                try:
-                    os.makedirs('models', exist_ok=True)
-                    shutil.copy2(str(chosen), MODEL_PATH)
-                    print(f"Copied {chosen.as_posix()} to {MODEL_PATH}")
-                except Exception as copy_err:
-                    print(f"Warning: could not copy to {MODEL_PATH}: {copy_err}")
-                return m
-            except Exception as e:
-                print(f"Fallback load from latest run failed: {e}")
+    run_dir = latest_run_dir()
+    weights = run_weights(run_dir) if run_dir else None
+    if weights is not None:
+        try:
+            model = YOLO(str(weights))
+            log.info("Model loaded from latest training run: %s", weights)
+            return YoloDetector(model, f"{run_dir.name}/{weights.name}", True, read_run_metrics(run_dir))
+        except Exception:
+            log.exception("Could not load %s", weights)
 
-    # 3) Final fallback
-    print("Using default YOLOv8n model for testing (no trained model found)")
-    return YOLO('yolov8n.pt')
+    log.warning(
+        "No trained fruit model found at %s. Using the stock COCO yolov8n model, which does not know "
+        "the fruit classes. Run `python setup.py` to download the trained model.",
+        MODEL_PATH,
+    )
+    return YoloDetector(YOLO(str(BASE_DIR / "yolov8n.pt")), "yolov8n.pt (generic COCO model)", False)
 
-model = load_model_with_fallback()
-
-# Class names for fruit detection (matching data.yaml)
-CLASS_NAMES = [
-    "apple", "tangerine", "pear", "watermelon", "durian", 
-    "lemon", "grape", "pineapple", "dragon fruit", "korean melon", "cantaloupe"
-]
 
 def draw_detections(image, detections):
-    """Draw bounding boxes and labels on the image"""
-    annotated_image = image.copy()
-    
-    for detection in detections:
-        x1, y1, x2, y2 = detection['bbox']
-        class_id = detection['class_id']
-        confidence = detection['confidence']
-        class_name = CLASS_NAMES[class_id] if class_id < len(CLASS_NAMES) else f"Class {class_id}"
-        
-        # Draw bounding box
-        cv2.rectangle(annotated_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-        
-        # Draw label background
-        label = f"{class_name} {confidence:.2f}"
-        (label_width, label_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
-        cv2.rectangle(annotated_image, (int(x1), int(y1) - label_height - 10), 
-                     (int(x1) + label_width, int(y1)), (0, 255, 0), -1)
-        
-        # Draw label text
-        cv2.putText(annotated_image, label, (int(x1), int(y1) - 5), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
-    
-    return annotated_image
+    """Draw bounding boxes and labels on a copy of the image."""
+    annotated = image.copy()
+    for d in detections:
+        x1, y1, x2, y2 = d["bbox"]
+        label = f"{d['class_name']} {d['confidence']:.2f}"
+        cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        (w, h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
+        top = max(y1, h + 10)  # keep the label inside the image for boxes at the top edge
+        cv2.rectangle(annotated, (x1, top - h - 10), (x1 + w, top), (0, 255, 0), -1)
+        cv2.putText(annotated, label, (x1, top - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 1)
+    return annotated
 
-def process_detections(results):
-    """Process YOLO detection results and extract relevant information"""
-    detections = []
-    class_counts = {}
-    
-    for result in results:
-        boxes = result.boxes
-        if boxes is not None:
-            for i, box in enumerate(boxes):
-                # Get bounding box coordinates
-                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                
-                # Get class ID and confidence
-                class_id = int(box.cls[0].cpu().numpy())
-                confidence = float(box.conf[0].cpu().numpy())
-                
-                # Get class name
-                class_name = CLASS_NAMES[class_id] if class_id < len(CLASS_NAMES) else f"Class {class_id}"
-                
-                # Update class counts
-                if class_name not in class_counts:
-                    class_counts[class_name] = 0
-                class_counts[class_name] += 1
-                
-                # Add detection to list
-                detections.append({
-                    'class_id': class_id,
-                    'class_name': class_name,
-                    'confidence': confidence,
-                    'bbox': [int(x1), int(y1), int(x2), int(y2)]
-                })
-    
-    return detections, class_counts
 
-@app.route('/api/predict', methods=['POST'])
-def predict():
-    """Handle image upload and run YOLO detection"""
+def count_classes(detections):
+    counts = {}
+    for d in detections:
+        counts[d["class_name"]] = counts.get(d["class_name"], 0) + 1
+    return counts
+
+
+def prune_folder(folder, keep):
+    """Delete the oldest files so at most `keep` remain."""
+    files = sorted((p for p in folder.iterdir() if p.is_file()), key=lambda p: p.stat().st_mtime, reverse=True)
+    for old in files[keep:]:
+        try:
+            old.unlink()
+        except OSError:
+            log.warning("Could not delete %s", old)
+
+
+def parse_confidence(value):
     try:
-        # Check if image file is present
-        if 'image' not in request.files:
-            return jsonify({'success': False, 'error': 'No image file provided'}), 400
-        
-        file = request.files['image']
-        if file.filename == '':
-            return jsonify({'success': False, 'error': 'No image file selected'}), 400
-        
-        # Generate unique filename
-        filename = f"{uuid.uuid4()}_{file.filename}"
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
-        
-        # Save uploaded image
-        file.save(filepath)
-        
-        # Load image for processing
-        image = cv2.imread(filepath)
+        conf = float(value)
+    except (TypeError, ValueError):
+        return DEFAULT_CONFIDENCE
+    return min(max(conf, 0.05), 0.95)
+
+
+def create_app(detector=None, data_dir=DATA_DIR):
+    data_dir = Path(data_dir)
+    annotated_dir = data_dir / "annotated"
+    captures_dir = data_dir / "camera_captures"
+    annotated_dir.mkdir(parents=True, exist_ok=True)
+    captures_dir.mkdir(parents=True, exist_ok=True)
+
+    app = Flask(__name__)
+    app.config["MAX_CONTENT_LENGTH"] = int(MAX_UPLOAD_MB * 1024 * 1024)
+    CORS(app)
+
+    detector = detector or load_detector()
+    store = DetectionStore(data_dir / "history.db")
+
+    def error(message, status):
+        return jsonify({"success": False, "error": message}), status
+
+    @app.errorhandler(RequestEntityTooLarge)
+    def too_large(_):
+        return error(f"Image is too large. The limit is {MAX_UPLOAD_MB:g} MB.", 413)
+
+    def run_detection(save_original):
+        file = request.files.get("image")
+        if file is None or file.filename == "":
+            return error("No image file provided", 400)
+
+        data = file.read()
+        image = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
         if image is None:
-            return jsonify({'success': False, 'error': 'Invalid image file'}), 400
-        
-        # Run YOLO detection
-        results = model(image)
-        
-        # Process detection results
-        detections, class_counts = process_detections(results)
-        
-        # Draw detections on image
-        annotated_image = draw_detections(image, detections)
-        
-        # Save annotated image
-        annotated_filename = f"annotated_{filename}"
-        annotated_filepath = os.path.join(ANNOTATED_FOLDER, annotated_filename)
-        cv2.imwrite(annotated_filepath, annotated_image)
-        
-        # Convert annotated image to base64 for frontend display
-        with open(annotated_filepath, 'rb') as img_file:
-            img_data = base64.b64encode(img_file.read()).decode('utf-8')
-        
-        # Clean up uploaded file
-        os.remove(filepath)
-        
-        # Prepare response
-        response_data = {
-            'success': True,
-            'detections': detections,
-            'annotated_image_url': f"data:image/jpeg;base64,{img_data}",
-            'total_detections': len(detections),
-            'class_counts': class_counts
-        }
-        
-        return jsonify(response_data)
-        
-    except Exception as e:
-        print(f"Error during prediction: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+            return error("That file isn't an image the server can read. Try a JPEG or PNG.", 400)
 
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'model_loaded': model is not None,
-        'class_names': CLASS_NAMES
-    })
-
-@app.route('/api/classes', methods=['GET'])
-def get_classes():
-    """Get available class names"""
-    return jsonify({
-        'classes': CLASS_NAMES,
-        'total_classes': len(CLASS_NAMES)
-    })
-
-@app.route('/api/camera-capture', methods=['POST'])
-def camera_capture():
-    """Handle camera capture and save to specific folder"""
-    try:
-        # Check if image file is present
-        if 'image' not in request.files:
-            return jsonify({'success': False, 'error': 'No image file provided'}), 400
-        
-        file = request.files['image']
-        if file.filename == '':
-            return jsonify({'success': False, 'error': 'No image file selected'}), 400
-        
-        # Generate unique filename with timestamp
-        timestamp = request.form.get('timestamp', '')
-        if timestamp:
-            filename = f"camera_capture_{timestamp}_{uuid.uuid4().hex[:8]}.jpg"
+        # File names are generated here; nothing the client sends ends up in a path.
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        token = uuid.uuid4().hex[:8]
+        if save_original:
+            stored_name = f"camera_capture_{stamp}_{token}.jpg"
+            (captures_dir / stored_name).write_bytes(data)
+            prune_folder(captures_dir, MAX_SAVED_IMAGES)
         else:
-            filename = f"camera_capture_{uuid.uuid4()}.jpg"
-        
-        filepath = os.path.join(CAMERA_CAPTURES_FOLDER, filename)
-        
-        # Save captured image
-        file.save(filepath)
-        
-        # Load image for processing
-        image = cv2.imread(filepath)
-        if image is None:
-            return jsonify({'success': False, 'error': 'Invalid image file'}), 400
-        
-        # Run YOLO detection
-        results = model(image)
-        
-        # Process detection results
-        detections, class_counts = process_detections(results)
-        
-        # Draw detections on image
-        annotated_image = draw_detections(image, detections)
-        
-        # Save annotated image
-        annotated_filename = f"annotated_{filename}"
-        annotated_filepath = os.path.join(ANNOTATED_FOLDER, annotated_filename)
-        cv2.imwrite(annotated_filepath, annotated_image)
-        
-        # Convert annotated image to base64 for frontend display
-        with open(annotated_filepath, 'rb') as img_file:
-            img_data = base64.b64encode(img_file.read()).decode('utf-8')
-        
-        # Prepare response
-        response_data = {
-            'success': True,
-            'detections': detections,
-            'annotated_image_url': f"data:image/jpeg;base64,{img_data}",
-            'total_detections': len(detections),
-            'class_counts': class_counts,
-            'saved_path': filepath,
-            'message': f'Image saved to {CAMERA_CAPTURES_FOLDER} folder'
+            stored_name = secure_filename(file.filename) or "upload"
+
+        conf = parse_confidence(request.form.get("conf"))
+        started = time.perf_counter()
+        detections = detector.predict(image, conf)
+        elapsed = round(time.perf_counter() - started, 3)
+        class_counts = count_classes(detections)
+
+        ok, encoded = cv2.imencode(".jpg", draw_detections(image, detections), [cv2.IMWRITE_JPEG_QUALITY, 90])
+        if not ok:
+            return error("Could not encode the annotated image", 500)
+        annotated_bytes = encoded.tobytes()
+        annotated_name = f"{stamp}_{token}.jpg"
+        (annotated_dir / annotated_name).write_bytes(annotated_bytes)
+        prune_folder(annotated_dir, MAX_SAVED_IMAGES)
+
+        record_id = store.add(stored_name, detections, class_counts, annotated_name, elapsed)
+
+        body = {
+            "success": True,
+            "id": record_id,
+            "detections": detections,
+            "annotated_image_url": "data:image/jpeg;base64," + base64.b64encode(annotated_bytes).decode(),
+            "total_detections": len(detections),
+            "class_counts": class_counts,
+            "confidence_threshold": conf,
+            "processing_time": elapsed,
         }
-        
-        return jsonify(response_data)
-        
-    except Exception as e:
-        print(f"Error during camera capture: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        if save_original:
+            body["saved_as"] = stored_name
+        return jsonify(body)
 
-if __name__ == '__main__':
-    print("Starting Food Detection API...")
-    print(f"Model path: {MODEL_PATH}")
-    print(f"Available classes: {CLASS_NAMES}")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    def handle(save_original):
+        try:
+            return run_detection(save_original)
+        except HTTPException:
+            raise
+        except Exception as e:
+            log.exception("Detection failed")
+            return error(f"Detection failed: {e}", 500)
+
+    @app.post("/api/predict")
+    def predict():
+        """Run detection on an uploaded image."""
+        return handle(save_original=False)
+
+    @app.post("/api/camera-capture")
+    def camera_capture():
+        """Run detection on a camera photo and keep the original in camera_captures/."""
+        return handle(save_original=True)
+
+    @app.get("/api/health")
+    def health():
+        return jsonify({"status": "healthy", "model": detector.info})
+
+    @app.get("/api/classes")
+    def classes():
+        names = detector.info["class_names"]
+        return jsonify({"classes": names, "total_classes": len(names)})
+
+    @app.get("/api/history")
+    def history():
+        limit = min(max(request.args.get("limit", 10, type=int), 1), 100)
+        return jsonify({"items": store.recent(limit)})
+
+    @app.get("/api/history/<int:detection_id>/image")
+    def history_image(detection_id):
+        name = store.annotated_image(detection_id)
+        path = annotated_dir / Path(name).name if name else None
+        if path is None or not path.exists():
+            return error("Image not found (it may have been cleaned up)", 404)
+        return send_file(path, mimetype="image/jpeg", max_age=86400)
+
+    @app.get("/api/stats")
+    def stats():
+        return jsonify({**store.stats(), "model": detector.info})
+
+    return app
 
 
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    host = os.environ.get("HAZER_HOST", "127.0.0.1")
+    port = int(os.environ.get("HAZER_PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG") == "1"
+    app = create_app()
+    print(f"Starting Food Detection API on http://{host}:{port} (debug {'on' if debug else 'off'})")
+    app.run(host=host, port=port, debug=debug)

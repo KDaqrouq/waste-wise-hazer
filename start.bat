@@ -14,7 +14,7 @@ if %errorlevel% neq 0 (
 REM Check if Python is installed
 where python >nul 2>nul
 if %errorlevel% neq 0 (
-    echo ❌ Python is not installed. Please install Python 3.8 or higher.
+    echo ❌ Python is not installed. Please install Python 3.9 or higher.
     pause
     exit /b 1
 )
@@ -34,14 +34,21 @@ if not exist "venv" (
 REM Activate virtual environment
 call venv\Scripts\activate.bat
 
-REM Install requirements if not already installed
-if not exist "requirements_installed" (
+REM Run setup (install requirements, download the model) whenever requirements.txt changes.
+REM The marker is only written after setup succeeds, so a failed install is retried next time.
+fc /b requirements.txt venv\.requirements_installed >nul 2>nul
+if errorlevel 1 (
     echo 📦 Installing Python requirements...
-    pip install -r requirements.txt
-    echo. > requirements_installed
+    python setup.py
+    if errorlevel 1 (
+        echo ❌ Backend setup failed. Fix the error above and run start.bat again.
+        pause
+        exit /b 1
+    )
+    copy /y requirements.txt venv\.requirements_installed >nul
 )
 
-REM Start Flask server in background
+REM Start Flask server in a new window
 echo 🚀 Starting Flask server on http://localhost:5000
 start "Backend Server" python app.py
 
@@ -56,7 +63,7 @@ echo ⚛️  Starting React frontend...
 REM Install npm dependencies if not already installed
 if not exist "node_modules" (
     echo 📦 Installing npm dependencies...
-    npm install
+    call npm install
 )
 
 REM Start Vite dev server
@@ -74,9 +81,3 @@ echo Both servers are now running in separate windows.
 echo Close the windows to stop the servers.
 echo.
 pause
-
-
-
-
-
-

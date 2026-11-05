@@ -3,43 +3,61 @@ import { FoodWasteChart } from "@/components/FoodWasteChart";
 import { RecentDetections } from "@/components/RecentDetections";
 import { LocationMap } from "@/components/LocationMap";
 import { Header } from "@/components/Header";
-import { TrendingDown, TrendingUp, Camera, MapPin, Recycle, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { TrendingDown, Camera, Apple, Target, ImageIcon, AlertTriangle } from "lucide-react";
+import { useStats } from "@/hooks/use-backend";
+import { fruitLabel } from "@/lib/api";
+
+const DemoBadge = () => (
+  <Badge variant="outline" className="ml-auto text-xs font-normal">Demo data</Badge>
+);
 
 const Index = () => {
+  const { data: stats, isError } = useStats();
+  const metrics = stats?.model.metrics;
+  const todayImages = stats?.daily[stats.daily.length - 1]?.images ?? 0;
+  const placeholder = isError ? "Offline" : "—";
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <div className="p-6">
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricsCard
-            title="Total Waste Detected"
-            value="47.2 kg"
-            change="-12% from last week"
-            changeType="positive"
-            icon={Recycle}
-          />
-          <MetricsCard
-            title="Most Wasted Item"
-            value="Vegetables"
-            change="25% of total waste"
+            title="Images Analyzed"
+            value={stats ? String(stats.total_images) : placeholder}
+            change={stats ? `${todayImages} today` : undefined}
             changeType="neutral"
-            icon={TrendingUp}
+            icon={ImageIcon}
           />
           <MetricsCard
-            title="Active Cameras"
-            value="8/10"
-            change="2 offline for maintenance"
-            changeType="warning"
+            title="Items Detected"
+            value={stats ? String(stats.total_items) : placeholder}
+            change={stats && stats.total_images > 0
+              ? `${(stats.total_items / stats.total_images).toFixed(1)} per image on average`
+              : undefined}
+            changeType="neutral"
             icon={Camera}
           />
           <MetricsCard
-            title="Locations Monitored"
-            value="12"
-            change="Across 5 UAE Emirates"
+            title="Most Detected Item"
+            value={stats?.top_class ? fruitLabel(stats.top_class) : placeholder}
+            change={stats?.top_class
+              ? `${stats.class_totals[stats.top_class]} of ${stats.total_items} items`
+              : undefined}
             changeType="neutral"
-            icon={MapPin}
+            icon={Apple}
+          />
+          <MetricsCard
+            title="Model Accuracy (mAP50)"
+            value={metrics ? `${(metrics.map50 * 100).toFixed(1)}%` : placeholder}
+            change={metrics
+              ? `mAP50-95 ${(metrics.map50_95 * 100).toFixed(1)}% on the validation set`
+              : stats ? "No training results found" : undefined}
+            changeType={metrics ? "positive" : "warning"}
+            icon={Target}
           />
         </div>
 
@@ -49,17 +67,18 @@ const Index = () => {
           <RecentDetections />
         </div>
 
-        {/* UAE Network Map */}
+        {/* Network Map (mock) */}
         <div className="mb-8">
           <LocationMap />
         </div>
 
-        {/* Additional Insights */}
+        {/* Additional Insights (mock) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-card rounded-lg p-6 border">
             <div className="flex items-center gap-3 mb-4">
               <TrendingDown className="h-5 w-5 text-success" />
               <h3 className="font-semibold">Waste Reduction Insights</h3>
+              <DemoBadge />
             </div>
             <div className="space-y-3">
               <div className="flex justify-between items-center p-3 bg-muted/50 rounded">
@@ -81,6 +100,7 @@ const Index = () => {
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="h-5 w-5 text-warning" />
               <h3 className="font-semibold">Action Items</h3>
+              <DemoBadge />
             </div>
             <div className="space-y-3">
               <div className="p-3 bg-warning/10 border border-warning/20 rounded">

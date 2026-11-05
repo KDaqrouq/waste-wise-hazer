@@ -11,6 +11,7 @@ interface CameraCaptureProps {
 
 const CameraCapture = ({ onImageCapture, onClose }: CameraCaptureProps) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [cameraOn, setCameraOn] = useState(true);
   const [isCapturing, setIsCapturing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
@@ -18,58 +19,59 @@ const CameraCapture = ({ onImageCapture, onClose }: CameraCaptureProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
-  const startCamera = useCallback(async () => {
-    try {
-      setError(null);
-      setIsCapturing(true);
+  // Start the camera while it's switched on, and restart it when the facing mode changes.
+  // The cleanup stops the stream, including one that arrives after the modal has closed.
+  useEffect(() => {
+    if (!cameraOn) return;
+    let cancelled = false;
+    let mediaStream: MediaStream | null = null;
+    setError(null);
+    setIsCapturing(true);
 
-      // Stop existing stream if any
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-
-      // Request camera access
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
+    navigator.mediaDevices
+      .getUserMedia({
         video: {
           facingMode: facingMode,
           width: { ideal: 1280 },
           height: { ideal: 720 }
         },
         audio: false
+      })
+      .then((result) => {
+        mediaStream = result;
+        if (cancelled) {
+          result.getTracks().forEach(track => track.stop());
+          return;
+        }
+        setStream(result);
+        if (videoRef.current) {
+          videoRef.current.srcObject = result;
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const errorMessage = err instanceof Error ? err.message : "Failed to access camera";
+        setError(errorMessage);
+        toast({
+          title: "Camera error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setIsCapturing(false);
       });
 
-      setStream(mediaStream);
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-
-      toast({
-        title: "Camera started",
-        description: "Camera is ready for capture",
-      });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to access camera";
-      setError(errorMessage);
-      toast({
-        title: "Camera error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsCapturing(false);
-    }
-  }, [stream, facingMode, toast]);
-
-  const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+    const video = videoRef.current;
+    return () => {
+      cancelled = true;
+      mediaStream?.getTracks().forEach(track => track.stop());
       setStream(null);
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  }, [stream]);
+      if (video) {
+        video.srcObject = null;
+      }
+    };
+  }, [cameraOn, facingMode, toast]);
 
   const captureImage = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -90,51 +92,23 @@ const CameraCapture = ({ onImageCapture, onClose }: CameraCaptureProps) => {
     // Convert canvas to blob
     canvas.toBlob((blob) => {
       if (blob) {
-        // Create file from blob
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `camera-capture-${timestamp}.jpg`;
-        const file = new File([blob], filename, { type: 'image/jpeg' });
+        const file = new File([blob], `camera-capture-${timestamp}.jpg`, { type: 'image/jpeg' });
 
-        // Call the callback with the captured image
+        // Hand the photo to the page (which analyzes it) and close; unmounting stops the camera
         onImageCapture(file);
-
-        toast({
-          title: "Image captured!",
-          description: "Processing image for classification...",
-        });
-
-        // Stop camera after capture
-        stopCamera();
         onClose();
       }
     }, 'image/jpeg', 0.9);
-  }, [onImageCapture, onClose, stopCamera, toast]);
+  }, [onImageCapture, onClose]);
 
   const toggleCamera = useCallback(() => {
-    if (stream) {
-      stopCamera();
-    } else {
-      startCamera();
-    }
-  }, [stream, startCamera, stopCamera]);
+    setCameraOn(on => !on);
+  }, []);
 
   const switchCamera = useCallback(() => {
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
   }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [stream]);
-
-  // Start camera when component mounts
-  useEffect(() => {
-    startCamera();
-  }, [facingMode]); // Restart camera when facing mode changes
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
